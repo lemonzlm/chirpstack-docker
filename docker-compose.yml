@@ -3,6 +3,7 @@ version: "3"
 services:
   chirpstack:
     image: chirpstack/chirpstack:4.0.0
+    container_name: lora_chirpstack
     command: -c /etc/chirpstack
     restart: unless-stopped
     volumes:
@@ -11,9 +12,10 @@ services:
     depends_on:
       - postgres
       - mosquitto
+      - emqx
       - redis
     environment:
-      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_HOST=emqx
       - REDIS_HOST=redis
       - POSTGRESQL_HOST=postgres
     ports:
@@ -30,6 +32,7 @@ services:
 
   chirpstack-rest-api:
     image: chirpstack/chirpstack-rest-api:4.0.0
+    container_name: lora_chirpstack-rest-api
     command: --server chirpstack:8080 --bind 0.0.0.0:8090 --insecure
     ports:
       - 8090:8090
@@ -38,6 +41,7 @@ services:
 
   postgres:
     image: postgres:14-alpine
+    container_name: lora_postgres
     volumes:
       - ./configuration/postgresql/initdb:/docker-entrypoint-initdb.d
       - postgresqldata:/var/lib/postgresql/data
@@ -46,15 +50,27 @@ services:
 
   redis:
     image: redis:7-alpine
+    container_name: lora_redis
     volumes:
       - redisdata:/data
 
   mosquitto:
     image: eclipse-mosquitto:2
-    ports:
-      - 1883:1883
+    container_name: lora_mosquitoo
+    # ports:
+    #   - 1883:1883
     volumes: 
       - ./configuration/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  emqx:
+    image: emqx/emqx:5.0.0
+    container_name: lora_emqx
+    ports:
+      - 1883:1883
+      - 8083:8083 
+      - 8883:8883 
+      - 8084:8084 
+      - 18083:18083
 
 volumes:
   postgresqldata:
